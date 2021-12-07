@@ -10,7 +10,8 @@
 # HOW MUCH FUEL WOULD IT COST?
 
 from statistics import median
-
+from time import time
+from math import inf
 
 def get_input(path):
     with open(path, "r") as fp:
@@ -32,14 +33,16 @@ def get_old_fuel_cost(arr, pos):
 def naive_get_optimal_fuel_cost(arr):
     arrmin = min(arr)
     arrmax = max(arr)
-    costs = []
+    mincost = inf
     for n in range(arrmax + 1):
-        costs.append(get_total_fuel_cost(arr, n + arrmin))
-    return min(costs) + arrmin
+        cost = get_total_fuel_cost(arr, n + arrmin)
+        mincost = cost if cost < mincost else mincost
+    return mincost + arrmin
 
 
 def get_fuel_cost(a, b):
-    return sum(range(abs(a - b) + 1))
+    delta = abs(b - a)
+    return (delta * (delta + 1)) / 2
 
 
 def get_total_fuel_cost(arr, pos):
@@ -54,7 +57,9 @@ def do_main():
 
 
 if __name__ == "__main__":
+    start = time()
     do_main()
-
+    end = time()
+    print(end - start)
     # 104149135 TOO HIGH
     # 104149091... I WAS SO CLOSE THE FIRST TIME WTF T_T
