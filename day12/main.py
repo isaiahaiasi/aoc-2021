@@ -3,6 +3,8 @@
 # find all permutations of the path between START & END node
 # 2 types of nodes: LARGE & small.
 # small caves can only be visited once.
+from collections import Counter
+
 
 class Graph:
     def __init__(self, nodes: dict):
@@ -23,7 +25,7 @@ class Graph:
             print(path)
             return
 
-        adj = [n for n in node.adj if n.name not in path or n.isbig()]
+        adj = [n for n in node.adj if self.is_valid_adj(n, path)]
         if len(adj) == 0:
             return
 
@@ -33,6 +35,17 @@ class Graph:
     def render_nodes(self):
         for name, node in self.nodes.items():
             print(name, ':', node.adj)
+
+    def is_valid_adj(self, n, path):
+        def small_repeats():
+            return [n for n, count in Counter(path).items() if count > 1 and n.islower()]
+
+        if n.isbig() or len(small_repeats()) == 0:
+            return True
+        elif n.name not in path:
+            return True
+        else:
+            return False
 
 
 class Node:
