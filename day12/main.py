@@ -4,6 +4,7 @@
 # 2 types of nodes: LARGE & small.
 # small caves can only be visited once.
 from collections import Counter
+import time
 
 
 class Graph:
@@ -22,10 +23,14 @@ class Graph:
 
         if node.name == 'end':
             self.path_count = self.path_count + 1
-            print(path)
+            # print(path)
             return
 
-        adj = [n for n in node.adj if self.is_valid_adj(n, path)]
+        small_repeats = len([n for n, count in Counter(
+            path).items() if count > 1 and n.islower()]) > 0
+
+        adj = [n for n in node.adj if self.is_valid_adj(
+            n, path, small_repeats)]
         if len(adj) == 0:
             return
 
@@ -36,11 +41,9 @@ class Graph:
         for name, node in self.nodes.items():
             print(name, ':', node.adj)
 
-    def is_valid_adj(self, n, path):
-        def small_repeats():
-            return [n for n, count in Counter(path).items() if count > 1 and n.islower()]
+    def is_valid_adj(self, n, path, small_repeats):
 
-        if n.isbig() or len(small_repeats()) == 0:
+        if n.isbig() or not small_repeats:
             return True
         elif n.name not in path:
             return True
@@ -85,6 +88,11 @@ def get_input(path):
 
 
 if __name__ == "__main__":
+
     input = get_input("input.txt")
+
     graph = parse_input(input)
+    start = time.time()
     graph.get_paths()
+    end = time.time()
+    print("time:", end - start)
