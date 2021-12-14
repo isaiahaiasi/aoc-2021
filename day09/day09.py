@@ -2,6 +2,11 @@
 # so so tired today
 # so we're gonna try brute force
 
+# reflection: too sleepy. shouldn't have done.
+# made p2 way harder than it had to be
+# due to sleepiness-induced illiteracy
+# fs in chat
+
 def load_input(path):
     with open(path) as fp:
         return fp.read().split('\n')
