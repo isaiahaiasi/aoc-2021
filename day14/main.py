@@ -5,8 +5,8 @@ from time import time
 def getcharlist(string):
     pairs = {}
     for i in range(len(string) - 1):
-        k = string[i:i+1]
-        if pairs[k]:
+        k = string[i:i+2]
+        if k in pairs:
             pairs[k] = pairs[k] + 1
         else:
             pairs[k] = 1
@@ -18,6 +18,8 @@ class Polymer:
         self.rules = rules
         self.pm = template
         self.pairs = getcharlist(template)
+        self.stepct = 0
+        self.lightstepct = 0
 
     def step(self):
         tmp = ''
@@ -25,6 +27,7 @@ class Polymer:
             insert = self.rules[self.pm[i:i+2]]
             tmp = tmp + self.pm[i] + insert
         self.pm = tmp + self.pm[-1]
+        self.stepct = self.stepct + 1
 
     def lightstep(self):
         # instead of dealing with the real strings
@@ -35,11 +38,26 @@ class Polymer:
         # NN -> NC++, CN++, NN-- (NN -> C)
         # NC -> NB++, BC++, NC-- (NC -> B)
         # CB -> CH++, HB++, CB-- (CB -> H)
+
+        # get new pairs
+        newPairs = {}
         for k, v in self.pairs.items():
+            if v <= 0:
+                continue
             a, b = self.getaddedkeys(k)
-            self.pairs[a] = self.pairs[a] + 1
-            self.pairs[b] = self.pairs[b] + 1
-            self.pairs[k] = self.pairs[k] - 1
+            pk = self.pairs[k]
+            newPairs[a] = pk if a not in newPairs else newPairs[a] + pk
+            newPairs[b] = pk if b not in newPairs else newPairs[b] + pk
+            newPairs[k] = -pk if k not in newPairs else newPairs[k] - pk
+
+        # merge newPairs into self.pairs
+        for k in newPairs:
+            if k in self.pairs:
+                self.pairs[k] = self.pairs[k] + newPairs[k]
+            else:
+                self.pairs[k] = newPairs[k]
+
+        self.lightstepct = self.lightstepct + 1
 
     def getaddedkeys(self, key):
         c = self.rules[key]
@@ -56,6 +74,15 @@ class Polymer:
 
         return max(chars.values()) - min(chars.values())
 
+    def getlightdelta(self):
+        chars = {}
+        for k, v in self.pairs.items():
+            c1, c2 = k[0], k[1]
+            chars[c1] = v if c1 not in chars else chars[c1] + v
+            chars[c2] = v if c2 not in chars else chars[c2] + v
+        v = chars.values()
+        return max(v) - min(v)
+
 
 class InputParser:
     def __init__(self, path):
@@ -66,22 +93,24 @@ class InputParser:
         self.rules = {k: v for k, v in rlist}
 
 
-inputParser = InputParser("testinput.txt")
+inputParser = InputParser("input.txt")
 poly = Polymer(inputParser.template, inputParser.rules)
 
-stepct = 18
-print("STEP COUNT", stepct)
-start = time()
 
-for i in range(stepct):
-    poly.step()
+def teststep(polymer):
+    polymer.step()
+    polymer.lightstep()
+    fullkeys = {k: v for k, v in sorted(getcharlist(
+        poly.pm).items(), key=lambda item: item[0])}
+    lightkeys = {k: v for k, v in sorted(
+        poly.pairs.items(), key=lambda item: item[0]) if v > 0}
 
-stepend = time()
-print("step cost", stepend - start)
+    print("full:", fullkeys)
+    print("light:", lightkeys)
 
-delta = poly.getdelta()
-print(delta)
 
-deltaend = time()
-print("delta cost", deltaend - stepend)
-print("total cost", deltaend - start)
+for i in range(40):
+    poly.lightstep()
+print(poly.getlightdelta() / 2)
+
+# 2967977072189 TOO HIGH
