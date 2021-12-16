@@ -1,4 +1,5 @@
 from math import inf
+from time import time
 
 
 def get_input(path):
@@ -6,62 +7,53 @@ def get_input(path):
     lines = fp.read().split('\n')
     fp.close()
 
-    nodes = []
+    nodes = {}
     for y in range(len(lines)):
-        noderow = []
         for x in range(len(lines[0])):
-            noderow.append(Node(x, y, int(lines[y][x])))
-        nodes.append(noderow)
+            nodes[(x, y)] = Node(x, y, int(lines[y][x]))
     return nodes
 
 
 class Node:
     def __init__(self, x, y, cost):
-        self.x = x
-        self.y = y
+        self.coords = x, y
         self.cost = cost
-        self.visited = False
         self.tc = inf
 
 
 class Graph:
     def __init__(self, nodes):
         self.nodes = nodes
-        self.h = len(nodes)
-        self.w = len(nodes[0])
+        self.h = max(nodes, key=lambda n: n[1])[1] + 1
+        self.w = max(nodes, key=lambda n: n[0])[0] + 1
+        self.unvisited = nodes.copy()  # todo: reimplement using minheap
 
     def dijkstra(self):
-        node = self.get_node(0, 0)
+        node = self.get_unvisited_node(0, 0)
         node.tc = 0
-        adj = self.get_adj(node.x, node.y)
+        adj = self.get_adj(*node.coords)
 
-        destnode = self.get_node(self.w - 1, self.h - 1)
-
-        while (not destnode.visited and len(adj) > 0):
+        while ((self.w - 1, self.h - 1) in self.unvisited):
+            del self.unvisited[node.coords]
             for an in adj:
                 tc = node.tc + an.cost
                 if (an.tc > tc):
                     an.tc = tc
             node.visited = True
 
-            print(self.render(), self.render("tc"))
-            print(node.tc)
+            if (node == self.get_last()):
+                return node
 
-            node = min(adj, key=lambda x: x.tc)
-            adj = self.get_adj(node.x, node.y)
-        return node
+            node = self.get_min()
+            adj = self.get_adj(*node.coords)
 
-    def get_node(self, x, y):
-        return self.nodes[y][x]
+    def get_unvisited_node(self, x, y):
+        return self.unvisited[(x, y)]
 
+    # todo: reimplement using minheap
     def get_min(self):
+        return min(self.unvisited.items(), key=lambda n: n[1].tc)[1]
 
-        # get node with minimum tc
-        # this is why I would want a minheap
-        # but unfortunately heapq doesn't let me lower priority :(
-        pass
-
-    # this could be an optimization target ("unvisited set")
     def get_adj(self, x, y):
         adj_nodes = []
         loc_adj = [(0, 1), (0, -1), (1, 0), (-1, 0)]
@@ -69,8 +61,8 @@ class Graph:
         for locx, locy in loc_adj:
             cx, cy = x + locx, y + locy
 
-            if self.in_range(cx, cy) and not self.get_node(cx, cy).visited:
-                adj_nodes.append(self.get_node(cx, cy))
+            if self.in_range(cx, cy) and (cx, cy) in self.unvisited:
+                adj_nodes.append(self.get_unvisited_node(cx, cy))
 
         return adj_nodes
 
@@ -88,8 +80,14 @@ class Graph:
             out += '\n'
         return out
 
+    def get_last(self):
+        return self.nodes[(self.w - 1, self.h - 1)]
+
 
 nodes = get_input('input/test-input.txt')
+start = time()
 graph = Graph(nodes)
 finalnode = graph.dijkstra()
-print(finalnode.x, finalnode.y, finalnode.cost)
+end = time()
+print(*finalnode.coords, finalnode.tc)
+print("time", end - start)
