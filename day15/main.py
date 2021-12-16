@@ -7,10 +7,21 @@ def get_input(path):
     lines = fp.read().split('\n')
     fp.close()
 
+    height = len(lines)
+    width = len(lines[0])
+
+    strout = ""
     nodes = {}
-    for y in range(len(lines)):
-        for x in range(len(lines[0])):
-            nodes[(x, y)] = Node(x, y, int(lines[y][x]))
+    for y in range(height * 5):
+        for x in range(width * 5):
+            adder = x // width + y // height
+            bigcost = int(lines[y % height][x % width]) + adder
+            cost = bigcost if bigcost < 10 else (bigcost % 10) + 1
+            nodes[(x, y)] = Node(x, y, cost)
+            strout += str(cost)
+        strout += "\n"
+    # with open("out-test.txt", "w") as fp:
+    #     fp.write(strout)
     return nodes
 
 
@@ -33,19 +44,29 @@ class Graph:
         node.tc = 0
         adj = self.get_adj(*node.coords)
 
+        # ! temp
+        c = 0
+        start = time()
+
         while ((self.w - 1, self.h - 1) in self.unvisited):
             del self.unvisited[node.coords]
             for an in adj:
                 tc = node.tc + an.cost
                 if (an.tc > tc):
                     an.tc = tc
-            node.visited = True
 
             if (node == self.get_last()):
                 return node
 
             node = self.get_min()
             adj = self.get_adj(*node.coords)
+
+            if c % 1000 == 0:
+                print(len(self.unvisited))
+            if c % 10000 == 0:
+                t = time()
+                print("time elapsed:", t - start)
+            c += 1
 
     def get_unvisited_node(self, x, y):
         return self.unvisited[(x, y)]
@@ -84,7 +105,7 @@ class Graph:
         return self.nodes[(self.w - 1, self.h - 1)]
 
 
-nodes = get_input('input/test-input.txt')
+nodes = get_input('input/input.txt')
 start = time()
 graph = Graph(nodes)
 finalnode = graph.dijkstra()
