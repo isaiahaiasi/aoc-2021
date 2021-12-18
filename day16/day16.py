@@ -1,5 +1,7 @@
 # PART 1 - SUM VERSION NUMBERS OF PACKETS
 # parse heirarchy of packets
+from math import prod
+
 
 def get_bin(hexdata: str):
     h_size = len(hexdata) * 4
@@ -37,22 +39,25 @@ class PacketParser:
         print("VERSION:", version)
 
         if typeid == 4:
-            # type = "literal"
-            # no subpackets, so right now I can just return (base case)
-            self.parse_literal()
+            # type 4 is a literal, so no subpackets
+            return self.get_packet_fn(typeid)()
+
+        # type = "operator"
+        subpacket_values = []
+
+        if self.parsebits(1):
+            # length type = 1 (subpacket count)
+            subpacket_count = self.parsebits(11)
+            for _ in range(subpacket_count):
+                subpacket_values.append(self.parse_packet())
         else:
-            # type = "operator"
-            if self.parsebits(1):
-                # length type = 1 (subpacket count)
-                subpacket_count = self.parsebits(11)
-                for _ in range(subpacket_count):
-                    self.parse_packet()
-            else:
-                # length type = 0 (subpackets by total bit length)
-                subpacket_bit_len = self.parsebits(15)
-                curptr = self.ptr
-                while self.ptr < curptr + subpacket_bit_len:
-                    self.parse_packet()
+            # length type = 0 (subpackets by total bit length)
+            subpacket_bit_len = self.parsebits(15)
+            curptr = self.ptr
+            while self.ptr < curptr + subpacket_bit_len:
+                subpacket_values.append(self.parse_packet())
+
+        return self.get_packet_fn(typeid)(subpacket_values)
 
     def parse_literal(self):
         numbits = ''
@@ -64,9 +69,23 @@ class PacketParser:
         print("LITERAL VALUE:", num)
         return num
 
+    def get_packet_fn(self, i: int):
+        packet_fns = [
+            sum,
+            prod,
+            min,
+            max,
+            self.parse_literal,
+            lambda x: 1 if x[0] > x[1] else 0,     # greater than
+            lambda x: 1 if x[0] < x[1] else 0,     # less than
+            lambda x: 1 if x[0] == x[1] else 0     # equal to
+        ]
+        return packet_fns[i]
+
 
 if __name__ == "__main__":
     bd = get_data("input/input.txt")
+    # bd = get_bin("9C0141080250320F1802104A08")
     packetParser = PacketParser(bd)
-    packetParser.parse_packet()
-    print("version sum:", packetParser.v_sum)
+    val = packetParser.parse_packet()
+    print(val)
